@@ -1,22 +1,38 @@
+# Python
 .venv/
 __pycache__/
 *.pyc
 .env
 
-# Raw Home Credit datasets
+# Home Credit datasets
 data/raw/
 
 # Large processed datasets
 data/processed/*.csv
 
-# Temporary/output files
+# External datasets
+data/external/*.csv
+data/external/**/*.parquet
+data/external/electric_sheep_africa/
+data/external/electric_sheep_india/
+
+# Outputs
 outputs/
 *.log
 
-# Python/Jupyter temporary files
+# Java / Maven
+**/target/
+
+# IntelliJ
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# Python/Jupyter
 .ipynb_checkpoints/
 
-# OS/editor files
+# OS
 .DS_Store
 Thumbs.db
-.vscode/
