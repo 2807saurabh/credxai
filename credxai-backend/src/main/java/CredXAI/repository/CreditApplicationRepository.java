@@ -13,4 +13,6 @@ public interface CreditApplicationRepository
     List<CreditApplication> findByUser(User user);
 
     List<CreditApplication> findByUserId(Long userId);
+
+    List<CreditApplication> findByUserIdOrderByCreatedAtDesc(Long userId);
 }

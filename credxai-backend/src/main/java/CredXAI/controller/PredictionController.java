@@ -46,4 +46,11 @@ public class PredictionController {
 
         return prediction;
     }
+
+    @GetMapping("/history")
+    public java.util.List<CredXAI.dto.CreditApplicationResponse> getHistory(
+            org.springframework.security.core.Authentication authentication) {
+        String userEmail = authentication.getName();
+        return applicationService.getUserApplications(userEmail);
+    }
 }
