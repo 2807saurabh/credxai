@@ -59,8 +59,8 @@ Before starting the application, ensure the following are installed:
 3. Verify your credentials in `credxai-backend/src/main/resources/application.properties`:
    ```properties
    spring.datasource.url=jdbc:mysql://localhost:3306/credtest
-   spring.datasource.username=root
-   spring.datasource.password=root@123
+   spring.datasource.username=****
+   spring.datasource.password=*****
    ```
    *(Flyway database migrations will automatically run and establish schema version 1 upon backend startup.)*
 
