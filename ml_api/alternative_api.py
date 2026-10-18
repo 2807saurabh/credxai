@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import joblib
 import pandas as pd
@@ -35,6 +36,15 @@ app = FastAPI(
         "thin-file applicants using 8 simple inputs."
     ),
     version="1.0.0",
+)
+
+# Allow the deployed React frontend to call this API.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://credxai-frontend.onrender.com"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
 )
 
 

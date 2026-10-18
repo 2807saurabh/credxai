@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 import joblib
 import pandas as pd
 import numpy as np
+from fastapi.middleware.cors import CORSMiddleware
 
 # ============================================================
 # CREDXAI - SIMPLE TRADITIONAL CREDIT RISK API
@@ -33,6 +34,16 @@ app = FastAPI(
         "12 simple applicant inputs with model-based XAI."
     ),
     version="1.0.0",
+)
+
+
+# Allow the deployed CredXAI frontend to call this API.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://credxai-frontend.onrender.com"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
 )
 
 

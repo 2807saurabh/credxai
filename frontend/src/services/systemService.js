@@ -1,143 +1,117 @@
+
 import apiClient from './apiClient';
 
 /**
- * Service to check system health of Spring Boot and ML Services
+ * Check the health of a deployed ML service.
+ * The service URL must come from the frontend environment variables.
  */
-export const systemService = {
-  /**
-   * Check Spring Boot Backend health or status
-   */
-  async checkBackend() {
-  try {
-    const start = Date.now();
-
-    // Use an existing, lightweight endpoint here.
-    const res = await apiClient.get('/api/auth/health', {
-      timeout: 3000,
-    });
-
+async function checkMlHealth(baseUrl) {
+  if (!baseUrl) {
     return {
-      status: 'ONLINE',
-      latency: Date.now() - start,
-    };
-  } catch (err) {
-    if (
-      err.response &&
-      [401, 403].includes(err.response.status)
-    ) {
-      return { status: 'ONLINE', port: 8080 };
-    }
-
-    return {
-      status: 'OFFLINE',
-      error: err.message,
+      status: 'UNREACHABLE',
+      error: 'ML service URL is missing from environment variables',
     };
   }
-},
 
-  /**
-   * Check Traditional ML Service (Port 8002)
-   * Uses same-origin Vite proxy (/ml-trad/health) first to avoid CORS in browser,
-   * falls back to direct URL if outside proxy context.
-   * Handles:
-   * 1. Boolean `true` or `"true"`
-   * 2. Object with `{ status: "healthy", model_loaded: true }`
-   */
-  async checkTraditionalMl() {
+  try {
+    const url = `${baseUrl.replace(/\/+$/, '')}/health`;
+
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!response.ok) {
+      return {
+        status: 'OFFLINE',
+        error: `Health check returned HTTP ${response.status}`,
+      };
+    }
+
+    const text = await response.text();
+    let data = text;
+
     try {
-      let res;
-      try {
-        res = await fetch('/ml-trad/health', { signal: AbortSignal.timeout(3000) });
-      } catch {
-        // Fallback to direct URL if proxy path fails
-        res = await fetch('http://127.0.0.1:8002/health', { signal: AbortSignal.timeout(3000) });
-      }
-
-      if (res && res.ok) {
-        const text = await res.text();
-        let isHealthy = false;
-        let data = null;
-
-        try {
-          data = JSON.parse(text);
-          if (
-            data === true ||
-            data === 'true' ||
-            data?.model_loaded === true ||
-            data?.status === 'healthy' ||
-            data?.status === 'ok'
-          ) {
-            isHealthy = true;
-          }
-        } catch {
-          // Plain text response check
-          if (text.trim().toLowerCase() === 'true' || text.trim().toLowerCase() === 'ok') {
-            isHealthy = true;
-          }
-        }
-
-        if (isHealthy) {
-          return { status: 'ONLINE', details: data || text };
-        }
-        return { status: 'OFFLINE', details: data || text };
-      }
-      return { status: 'OFFLINE' };
+      data = JSON.parse(text);
     } catch {
-      return { status: 'UNREACHABLE' };
+      // Support plain-text health responses.
+    }
+
+    const isHealthy =
+      data === true ||
+      data === 'true' ||
+      (typeof data === 'string' &&
+        ['ok', 'healthy'].includes(data.trim().toLowerCase())) ||
+      data?.model_loaded === true ||
+      ['healthy', 'ok'].includes(
+        String(data?.status ?? '').toLowerCase()
+      );
+
+    return {
+      status: isHealthy ? 'ONLINE' : 'OFFLINE',
+      details: data,
+    };
+  } catch (error) {
+    return {
+      status: 'UNREACHABLE',
+      error: error.message,
+    };
+  }
+}
+
+/**
+ * Service to check Spring Boot and ML service health.
+ */
+const systemService = {
+  /**
+   * Check Spring Boot backend health.
+   */
+  async checkBackend() {
+    try {
+      const start = Date.now();
+
+      await apiClient.get('/api/auth/health', {
+        timeout: 3000,
+      });
+
+      return {
+        status: 'ONLINE',
+        latency: Date.now() - start,
+      };
+    } catch (err) {
+      if (
+        err.response &&
+        [401, 403].includes(err.response.status)
+      ) {
+        return {
+          status: 'ONLINE',
+          port: 8080,
+        };
+      }
+
+      return {
+        status: 'OFFLINE',
+        error: err.message,
+      };
     }
   },
 
   /**
-   * Check Alternative ML Service (Port 8001)
-   * Uses same-origin Vite proxy (/ml-alt/health) first to avoid CORS in browser,
-   * falls back to direct URL if outside proxy context.
-   * Handles:
-   * 1. Boolean `true` or `"true"`
-   * 2. Object with `{ status: "healthy", model_loaded: true }`
+   * Check deployed Traditional ML service.
+   */
+  async checkTraditionalMl() {
+    return checkMlHealth(
+      import.meta.env.VITE_TRADITIONAL_ML_URL
+    );
+  },
+
+  /**
+   * Check deployed Alternative ML service.
    */
   async checkAlternativeMl() {
-    try {
-      let res;
-      try {
-        res = await fetch('/ml-alt/health', { signal: AbortSignal.timeout(3000) });
-      } catch {
-        // Fallback to direct URL if proxy path fails
-        res = await fetch('http://127.0.0.1:8001/health', { signal: AbortSignal.timeout(3000) });
-      }
-
-      if (res && res.ok) {
-        const text = await res.text();
-        let isHealthy = false;
-        let data = null;
-
-        try {
-          data = JSON.parse(text);
-          if (
-            data === true ||
-            data === 'true' ||
-            data?.model_loaded === true ||
-            data?.status === 'healthy' ||
-            data?.status === 'ok'
-          ) {
-            isHealthy = true;
-          }
-        } catch {
-          // Plain text response check
-          if (text.trim().toLowerCase() === 'true' || text.trim().toLowerCase() === 'ok') {
-            isHealthy = true;
-          }
-        }
-
-        if (isHealthy) {
-          return { status: 'ONLINE', details: data || text };
-        }
-        return { status: 'OFFLINE', details: data || text };
-      }
-      return { status: 'OFFLINE' };
-    } catch {
-      return { status: 'UNREACHABLE' };
-    }
-  }
+    return checkMlHealth(
+      import.meta.env.VITE_ALTERNATIVE_ML_URL
+    );
+  },
 };
 
 export default systemService;
