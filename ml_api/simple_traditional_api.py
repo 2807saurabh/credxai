@@ -105,7 +105,12 @@ def health():
         "status": "healthy",
         "model_loaded": True
     }
-
+@app.get("/cors-check")
+def cors_check():
+    return {
+        "service": "traditional-ml",
+        "cors_middleware_configured": True
+    }
 
 # ============================================================
 # RISK BAND
