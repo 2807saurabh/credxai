@@ -13,15 +13,17 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 public class SecurityConfig {
 
+
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http, JwtFilter jwtFilter) throws Exception {
 
         http
+                .cors(cors -> {})
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/register",
@@ -30,17 +32,22 @@ public class SecurityConfig {
                         .requestMatchers("/api/predictions/**").authenticated()
                         .anyRequest().permitAll()
                 )
-
                 .httpBasic(basic -> basic.disable())
                 .formLogin(form -> form.disable())
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(
                         (request, response, exception) ->
-                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                                        "Authentication required")));
+                                response.sendError(
+                                        HttpServletResponse.SC_UNAUTHORIZED,
+                                        "Authentication required"
+                                )
+                ));
 
         http.addFilterBefore(
-                jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                jwtFilter,
+                UsernamePasswordAuthenticationFilter.class
+        );
 
         return http.build();
     }
+
 }
